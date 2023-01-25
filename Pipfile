@@ -7,6 +7,7 @@ name = "pypi"
 fastapi = "*"
 aiosqlite = "*"
 alembic = "*"
+sqlalchemy = "*"
 
 [dev-packages]
 
@@ -15,3 +16,6 @@ python_version = "3.9"
 
 [packages.uvicorn]
 extras = [ "standard",]
+
+[packages.databases]
+extras = [ "sqlite",]
