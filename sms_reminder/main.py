@@ -13,4 +13,4 @@ app = FastAPI(
 
 
 if __name__ == "__main__":
-    uvicorn.run("sms.main:app", host="0.0.0.0", port=3030)
+    uvicorn.run("sms_reminder.main:app", host="0.0.0.0", port=3030)
