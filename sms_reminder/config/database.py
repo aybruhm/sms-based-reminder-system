@@ -10,7 +10,7 @@ from databases import Database
 # create database and engine
 DATABASE_URL = "sqlite:///./sms_reminder.sqlite"
 DATABASE_ENGINE = create_engine(
-    Database, connect_args={"check_same_thread": False}
+    DATABASE_URL, connect_args={"check_same_thread": False}
 )
 
 # construct a session maker
