@@ -7,6 +7,7 @@ from fastapi import FastAPI
 # Own Imports
 from sms_reminder.config.database import db_connect
 from sms_reminder.api.index import router as root_router
+from sms_reminder.api.crud import router as crud_router
 
 
 # construct application
@@ -18,6 +19,7 @@ app = FastAPI(
 
 # include routers
 app.include_router(root_router)
+app.include_router(crud_router)
 
 
 @app.on_event("startup")
