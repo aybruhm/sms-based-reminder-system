@@ -6,13 +6,18 @@ from fastapi import FastAPI
 
 # Own Imports
 from sms_reminder.config.database import db_connect
+from sms_reminder.api.index import router as root_router
 
 
+# construct application
 app = FastAPI(
     title="SMS Reminder System",
     description="An SMS reminder system that allows users to text a specific number to set reminders for themselves.",
     verison=1.0,
 )
+
+# include routers
+app.include_router(root_router)
 
 
 @app.on_event("startup")
@@ -26,4 +31,6 @@ async def disconnect():
 
 
 if __name__ == "__main__":
-    uvicorn.run("sms_reminder.main:app", host="0.0.0.0", port=3030)
+    uvicorn.run(
+        "sms_reminder.main:app", host="0.0.0.0", port=3030, reload=True
+    )
