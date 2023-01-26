@@ -7,28 +7,19 @@ from sqlalchemy.orm import Session
 
 # Own Imports
 from sms_reminder.models.sms import Reminder
-from sms_reminder.config.deps import get_db_session
+from sms_reminder.config.database import SessionLocal
 
 
 class ReminderORMInterface:
     """Reminder ORM that interface with the database."""
 
     def __init__(self) -> None:
-        self.orm = get_db_session()
-
-    def get_session(self) -> Session:
-        """
-        This method returns the next session in the session pool.
-
-        :return: A session object
-        """
-
-        return next(self.orm)
+        self.db: Session = SessionLocal()
 
     async def get(self) -> List[Reminder]:
         """This method gets a list of reminders."""
 
-        reminders = self.get_session().query(Reminder).all()
+        reminders = self.db.query(Reminder).all()
         return reminders
 
     async def create(
@@ -42,9 +33,10 @@ class ReminderORMInterface:
             remind_when=remind_when,
         )
 
-        # add reminder to table and commit session
-        self.get_session().add(reminder)
-        self.get_session().commit(reminder)
+        self.db.add(reminder)
+        self.db.commit()
+        self.db.refresh(reminder)
+
         return reminder
 
 
