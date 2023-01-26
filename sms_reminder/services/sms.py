@@ -1,12 +1,14 @@
 # Stdlib Imports
 from datetime import datetime
+from typing import List
 
 # Own Imports
+from sms_reminder.services.vonage import voyage_sms
 from sms_reminder.interface.sms import reminder_orm, Reminder
 
 
 async def create_user_reminder(
-    phone_number: str, message: str, reminder_when: datetime
+    phone_number: str, message: str, remind_when: datetime
 ) -> Reminder:
     """
     This function creates a new reminder in the database.
@@ -23,5 +25,8 @@ async def create_user_reminder(
     :return: A reminder object
     """
 
-    reminder = await reminder_orm.create(phone_number, message, reminder_when)
+    reminder = await reminder_orm.create(phone_number, message, remind_when)
+    # sms_sent = await voyage_sms.send(phone_number, message)
+
     return reminder
+
