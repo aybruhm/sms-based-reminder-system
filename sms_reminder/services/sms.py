@@ -2,8 +2,11 @@
 from datetime import datetime
 from typing import List
 
+# FastAPI Imports
+from fastapi import HTTPException
+
 # Own Imports
-from sms_reminder.services.vonage import voyage_sms
+from sms_reminder.services.tasks import create_reminder_job
 from sms_reminder.interface.sms import reminder_orm, Reminder
 
 
@@ -26,9 +29,13 @@ async def create_user_reminder(
     """
 
     reminder = await reminder_orm.create(phone_number, message, remind_when)
-    # sms_sent = await voyage_sms.send(phone_number, message)
+    reminder_job = await create_reminder_job(
+        phone_number, message, remind_when
+    )
 
-    return reminder
+    if reminder_job["scheduled"]:
+        return reminder
+    raise HTTPException(400, {"message": "Was not able to set reminder!"})
 
 
 async def get_user_reminders() -> List[Reminder]:
