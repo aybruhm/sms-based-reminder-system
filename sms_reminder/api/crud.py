@@ -1,11 +1,15 @@
+# Stdlib Imports
+from typing import List
+
 # FastAPI Imports
 from fastapi import APIRouter, status
 
 # Own Imports
-from sms_reminder.services.sms import create_user_reminder
+from sms_reminder.services.sms import create_user_reminder, get_user_reminders
 from sms_reminder.schemas.crud import CreateReminderSchema, ReminderSchema
 
 
+# initialize the api router
 router = APIRouter(tags=["Reminder"])
 
 
@@ -17,10 +21,22 @@ async def create_reminder(payload: CreateReminderSchema):
     :param payload: CreateReminderSchema\n
     :type payload: CreateReminderSchema
 
-    :return: A dictionary with a message and a data.
+    :return: The reminder serialized to a json.
     """
 
-    reminder = create_user_reminder(
+    reminder = await create_user_reminder(
         payload.phone_number, payload.message, payload.remind_when
     )
-    return {"message": "Reminder set!", "data": reminder}
+    return reminder
+
+
+@router.get("/reminders/", response_model=List[ReminderSchema])
+async def get_reminders():
+    """
+    This API view gets the total available reminders.
+
+    :return: A list of reminders.
+    """
+
+    reminders = await get_user_reminders()
+    return reminders
