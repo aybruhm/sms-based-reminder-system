@@ -1,8 +1,9 @@
 # Stdlib Imports
 from typing import List
+from datetime import datetime, timezone
 
 # FastAPI Imports
-from fastapi import APIRouter, status
+from fastapi import APIRouter, status, HTTPException
 
 # Own Imports
 from sms_reminder.services.sms import create_user_reminder, get_user_reminders
@@ -24,10 +25,18 @@ async def create_reminder(payload: CreateReminderSchema):
     :return: The reminder serialized to a json.
     """
 
+    if payload.remind_when <= datetime.now(timezone.utc):
+        raise HTTPException(
+            400,
+            {
+                "message": "Kindly set a date and time that exceeds the past and now."
+            },
+        )
+
     reminder = await create_user_reminder(
         payload.phone_number, payload.message, payload.remind_when
     )
-    return reminder
+    return {"message": "Reminder set!", "data": reminder}
 
 
 @router.get("/reminders/", response_model=List[ReminderSchema])
