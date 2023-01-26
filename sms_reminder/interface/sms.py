@@ -1,4 +1,5 @@
 # Stdlib Imports
+from typing import List
 from datetime import datetime
 
 # SQLAlchemy Imports
@@ -24,15 +25,15 @@ class ReminderORMInterface:
 
         return next(self.orm)
 
-    def create(
-        self, phone_number: str, message: str, reminder_when: datetime
+    async def create(
+        self, phone_number: str, message: str, remind_when: datetime
     ) -> Reminder:
         """This method creates a new reminder to the database."""
 
         reminder = Reminder(
             phone_number=phone_number,
             message=message,
-            reminder_when=reminder_when,
+            remind_when=remind_when,
         )
 
         # add reminder to table and commit session
