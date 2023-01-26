@@ -1,6 +1,7 @@
 # Stdlib Imports
+import pytz
 from datetime import datetime
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 
 
 class BaseReminderSchema(BaseModel):
@@ -11,9 +12,10 @@ class BaseReminderSchema(BaseModel):
         description="What message do you want to remind yourself with? E.g Time to go to the gym!"
     )
     remind_when: datetime = Field(
-        description="When should I send this message to you?"
+        description="When should I send this message to you?",
+        default=datetime.now(tz=pytz.timezone("Africa/Lagos")),
     )
-
+    
 
 class CreateReminderSchema(BaseReminderSchema):
     pass
