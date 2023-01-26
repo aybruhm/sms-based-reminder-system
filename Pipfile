@@ -10,6 +10,7 @@ alembic = "*"
 sqlalchemy = "*"
 httpx = "*"
 python-decouple = "*"
+apscheduler = "*"
 
 [dev-packages]
 black = "*"
