@@ -30,3 +30,13 @@ async def create_user_reminder(
 
     return reminder
 
+
+async def get_user_reminders() -> List[Reminder]:
+    """
+    This function gets the list of user reminders.
+
+    :return: A list of reminder objects.
+    """
+
+    reminders = await reminder_orm.get()
+    return reminders
