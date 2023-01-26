@@ -5,6 +5,7 @@ import uvicorn
 from fastapi import FastAPI
 
 # Own Imports
+from sms_reminder.services.tasks import scheduler
 from sms_reminder.config.database import db_connect
 from sms_reminder.api.index import router as root_router
 from sms_reminder.api.crud import router as crud_router
@@ -24,6 +25,7 @@ app.include_router(crud_router)
 
 @app.on_event("startup")
 async def startup():
+    scheduler.start()
     await db_connect.connect()
 
 
