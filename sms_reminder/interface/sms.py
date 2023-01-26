@@ -25,6 +25,12 @@ class ReminderORMInterface:
 
         return next(self.orm)
 
+    async def get(self) -> List[Reminder]:
+        """This method gets a list of reminders."""
+
+        reminders = self.get_session().query(Reminder).all()
+        return reminders
+
     async def create(
         self, phone_number: str, message: str, remind_when: datetime
     ) -> Reminder:
