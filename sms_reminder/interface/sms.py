@@ -14,7 +14,23 @@ class ReminderORMInterface:
     """Reminder ORM that interface with the database."""
 
     def __init__(self) -> None:
-        self.db: Session = SessionLocal()
+        self.db: Session = self.get_db_session().__next__()
+
+    def get_db_session(self):
+        """
+        This creates a database session, yields it to the caller,
+        rollback the session if an exception occurs;
+        otherwise, close the session.
+        """
+
+        session: Session = SessionLocal()
+
+        try:
+            yield session
+        except Exception:
+            session.rollback()
+        finally:
+            session.close()
 
     async def get(self) -> List[Reminder]:
         """This method gets a list of reminders."""
