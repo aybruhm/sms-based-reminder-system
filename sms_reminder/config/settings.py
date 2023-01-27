@@ -15,4 +15,6 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_setting_values() -> Settings:
-    return Settings()
+    env_var = Settings()
+    return env_var
+
