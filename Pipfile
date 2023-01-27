@@ -11,6 +11,7 @@ sqlalchemy = "*"
 httpx = "*"
 python-decouple = "*"
 apscheduler = "*"
+backoff = "*"
 
 [dev-packages]
 black = "*"
