@@ -1,7 +1,7 @@
 # Stdlib Imports
 import pytz
 from datetime import datetime
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field
 
 
 class BaseReminderSchema(BaseModel):
