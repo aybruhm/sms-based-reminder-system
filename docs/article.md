@@ -214,7 +214,65 @@ You must be thinking "woah, things are getting pretty complex already"? Don't wo
 - `declarative_base`: this function is used to define classes mapped to relational database tables.
 - `Database`: this calss is contructing a database connector that will help us connect and shutdown our database.
 
-Now that you understand what is going on, let's proceed by creating a `settings.py` file to hold store our environmental variables. You do not want to expose your keys to public for anything. Copy and paste the below code to the file:
+Now that you understand what is going on, let's proceed by adding `Base` to the `Reminder` class in `sms` models:
+
+```python
+# SQLAlchemy Imports
+from sqlalchemy import Column, String, DateTime
+
+# Own Imports
+from sms_reminder.config.database import Base # new line
+from sms_reminder.models.base import ObjectTracker
+
+
+class Reminder(ObjectTracker, Base): # added Base
+    __tablename__ = "reminders"
+
+    phone_number = Column(String)
+    message = Column(String)
+    remind_when = Column(DateTime)
+```
+
+Doing the above will help tell sqlachemy to map the defined class to a relational database table. Next would be updating `main.py` entrypoint to connect and shutdown our database whenever our backend server emits a `startup` and `shutdown` event:
+
+```python
+# Uvicorn Imports
+import uvicorn
+
+# FastAPI Imports
+from fastapi import FastAPI
+
+# Own Imports
+from sms_reminder.config.database import db_connect # new line
+
+
+# construct application
+app = FastAPI(
+    title="SMS Reminder System",
+    description="An SMS reminder system that allows users to text a specific number to set reminders for themselves.",
+    verison=1.0,
+)
+
+
+@app.on_event("startup")
+async def startup():
+    scheduler.start()
+    await db_connect.connect() # new line
+
+
+@app.on_event("shutdown")
+async def disconnect():
+    await db_connect.disconnect() # new line
+
+
+if __name__ == "__main__":
+    uvicorn.run(
+        "sms_reminder.main:app", host="0.0.0.0", port=3030, reload=True
+    )
+
+```
+
+Now that we have updated our models and server entrypoint, let's proceed by creating a `settings.py` file to hold store our environmental variables. You do not want to expose your keys to public for anything. Copy and paste the below code to the file:
 
 ```python
 # Stdlib Imports
@@ -238,9 +296,9 @@ def get_setting_values() -> Settings:
     return env_var
 ```
 
-Let's go over what is going on in our code:
+Let's go over what we have done:
 
-- `lru_cache`: this decorator will create the `Settings` object once, that is, the first time it was called. After that, it will be cached and be reused, instead of having to create the `Settings` object everytime we want to access our keys.
+- `lru_cache`: this decorator will create the `Settings` object once. After that, it will be cached and be reused, instead of having to create the `Settings` object everytime we want to access the values.
 - `BaseSettings`: allows values to be overridden by environment variables. This is useful in production for secrets you do not wish to save in code, it plays nicely with docker(-compose), Heroku and any 12 factor app design.
 
 Now that we have created the Settings object responsible for getting our environment variables, we need to create a `.env` that will be loaded by `environ`. Copy and paste the below code into the file:
@@ -250,7 +308,58 @@ VOYAGE_API_KEY=value
 VOYAGE_SECRET_KEY=value
 ```
 
+It is important that you replace the values with your API keys.
+
 6). Initialize `alembic` to handle database migrations
+
+Alembic is a lightweight database migration tool for usage with the SQLAlchemy Database Toolkit for Python. It is widely used for database migrations. Let's proceed to using it.
+
+We have it installed from the start of our project, so what we need to do now is initialize alembic to our working project directory. Run the below command in your terminal:
+
+```bash
+alembic init migrations
+```
+
+I used `migrations` because I want that everything database migrations be stored in that folder. Running the above command will create a folder named `migrations` with the following files/folder in it:
+
+```bash
+- env.py
+- README
+- script.py.mako
+- versions (folder)
+```
+
+In the project directory, a file `alembic.ini` will also be created. There will be no version files in your `versions` directory because we haven’t made any migrations yet. Now to use alembic we need to do certain changes in these files. First, change the `sqlalchemy.url` in your `alembic.ini` file:
+
+```bash
+sqlalchemy.url = sqlite:///./sms_reminder.sqlite
+```
+
+Next would be to give our database model to alembic, and access the metadata from the model. Edit your `env.py` file inside your `migations` folder:
+
+```python
+... # this means there are other imports here
+
+# Own Imports
+from sms_reminder.models.sms import Reminder # new line
+
+... # this means there are other codes above
+target_metadata = Reminder.metadata # update
+```
+
+As shown above, we have to give the model base file to alembic. Now we are all set for our first migration. Run the below command on your terminal:
+
+```bash
+alembic revision --autogenerate -m "Create reminder table"
+```
+
+Running the above command will tell alembic to generate our migration file in the `versions` folder. Once this file is generated, we are ready for database migration. Run the below command:
+
+```bash
+alembic upgrade head
+```
+
+Once you run the above command, your tables will be generated in your database. That's all to the magic. Read more about alembic [here](https://alembic.sqlalchemy.org/en/latest/).
 
 7). Create `schemas` Directory
 
