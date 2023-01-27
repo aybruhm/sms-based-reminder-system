@@ -18,12 +18,12 @@ class ReminderORMInterface:
 
     def get_db_session(self):
         """
-        This creates a database session, yields it to the caller,
-        rollback the session if an exception occurs;
-        otherwise, close the session.
+        This method creates a database session, 
+        yields it to the caller, rollback the session 
+        if an exception occurs; otherwise, close the session.
         """
 
-        session: Session = SessionLocal()
+        session = SessionLocal()
 
         try:
             yield session
