@@ -52,6 +52,7 @@ aiosqlite==0.18.0
 alembic==1.9.2
 anyio==3.6.2
 apscheduler==3.9.1.post1
+backoff==2.2.1
 certifi==2022.12.7
 click==8.1.3
 databases==0.7.0
@@ -75,13 +76,14 @@ six==1.16.0
 sniffio==1.3.0
 sqlalchemy==1.4.46
 starlette==0.22.0
-typing-extensions==4.4.0
+typing-extensions==4.4.0; python_version < '3.10'
 tzdata==2022.7; python_version >= '3.6'
 tzlocal==4.2
 uvicorn==0.20.0
 uvloop==0.17.0
 watchfiles==0.18.1
 websockets==10.4
+
 ```
 
 Proceed to install the required packages at once using the command below:
@@ -408,7 +410,7 @@ Let's go over what's happening in the above code. We are importing the python ti
 
 8). Create `interface` Directory
 
-We want an interface that sits between our data access layer (database) and the business logic layer (services) of an application. The best way to go about doing that is by using the repository design pattern. You see, the repository pattern abstracts the manner in which your data is queried or created for you. Moving on, create an `__init__.py` file to tell Python to treat the directory as a module, and then- create a `sms.py` file. Copy and paste the below code into the file:
+We want an interface that sits between our data access layer (database) and the business logic layer (services) of an application. The best way to go about doing that is by using the repository design pattern. You see, the repository pattern abstracts the manner in which your data is queried or created for you. Moving on, create an `__init__.py` file to tell Python to treat the directory as a module, and then- create a file named `sms.py`. Copy and paste the below code into the file:
 
 ```python
 # Stdlib Imports
@@ -482,6 +484,207 @@ Let's break down what's happening in the above code, we have four methods:
 To begin using our interface, we need to initialize our class to a variable.
 
 9). Create `services` Directory
+
+In our previous section, we went over what an interface (a repository pattern) is; and how it sits between our data access layer and the business logic layer of our application. In this section, we will be creating the business logic layer. Moving on, create an `__init__.py` file to tell Python to treat the directory as a module.
+
+i). Create a file named `vonage.py` file, copy and paste the below code into it:
+
+```python
+# Stdlib Imports
+from typing import Dict
+
+# FastAPI Imports
+from fastapi import HTTPException
+
+# Own Imports
+from sms_reminder.config.settings import get_setting_values as settings
+
+# Third Party Imports
+import httpx
+import backoff
+
+
+class VonageSMS:
+    """SMS API Service provider to handle sending text messages."""
+
+    def __init__(self) -> None:
+        """
+        The method is used to initialize the class
+        and set the base_url, settings, secret_key and api_key.
+        """
+
+        self.base_url = "https://rest.nexmo.com/sms/json"
+        self.settings = settings()
+        self.secret_key = self.settings.VOYAGE_SECRET_KEY
+        self.api_key = self.settings.VOYAGE_API_KEY
+
+    def headers(self) -> Dict[str, str]:
+        """
+        This method returns a header with a key of "Content-Type" and a value of
+        "application/x-www-form-urlencoded".
+        """
+
+        return {"Content-Type": "application/x-www-form-urlencoded"}
+
+    @backoff.on_exception(backoff.expo, httpx.ConnectTimeout, max_time=100)
+    async def send(self, phone_number: str, message: str) -> True:
+        """
+        This method sends a message to the provided phone number using the VonageSMS API.
+
+        :param phone_number: The phone number to send the message to
+        :type phone_number: str
+
+        :param message: The message you want to send
+        :type message: str
+
+        :return: True
+        """
+
+        async with httpx.AsyncClient() as client:
+            request_data = f"from=Send Reminder!&text={message}&to={phone_number}&api_key={self.api_key}&api_secret={self.secret_key}"
+            response = await client.post(
+                url=self.base_url, headers=self.headers(), data=request_data
+            )
+            response_data = response.json()["messages"][0]
+
+            if response_data["status"] == "0":
+                return True
+            raise HTTPException(
+                500,
+                {
+                    "source": "VonageSMS",
+                    "message": response_data["error-text"],
+                },
+            )
+
+
+vonage_sms = VonageSMS()
+```
+
+> "Woahhh. That's a lot of code, Abram!"
+
+Don't worry about it, let's go over it together. One import, method at a time. I won't be explaining generic stuff I assume you should already know, such as Dict from `typing`.
+
+- `HTTPException`: this is a base class for all http exceptions. You can override it to create custom exceptions like ServerException, NotFoundException, etc.
+- `settings`: this is a function from the `config/settings.py` module that when called caches our environment variables and also gives us access to the value.
+- `httpx`: this is a fully featured http client library for python3. It has support for both http/1.1 and http/2 and provides both sync and async APIs.
+- `backoff`: this library provides function decorators which can be used to wrap a function such that it will be retried until some condition is met.
+
+Do you see now? There was no need to panic, I am here to explain everything just right. Next is, what each method is doing:
+
+- `__init__`: this method is used to initialize our `VonageSMS` class and set the base_url and settings; secret_key and api_key of vonage sms service.
+- `headers`: this method is used to set the content-type we want in our headers, when we make a request to vonage sms service via api.
+- `send`: this method sends a message to the phone number provided using vonage sms api. To be able to send an sms, we require a phone_number and the message we want to tell send. Note the use of `httpx.AsyncClient()` rather than `httpx.Client`, in the method. This is because `AsyncClient` is asynchronous and its context manager uses `async with` not just `with`. Moving forward, we are encoding the form in an url and making a post request to our `base_url` that we have set in our `__init__` method. Next is, we are checking t see if we have a status that equals to `"0"` return `True`, otherwise, raise a 500 exception that tells the client what went wrong.
+
+ii). Create a file named `tasks.py`, copy and paste the below code into it:
+
+```python
+# Stdlib Imports
+from random import randint
+from datetime import datetime
+
+# APScheduler Imports
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+
+# Own Imports
+from sms_reminder.services.vonage import vonage_sms
+
+
+# initialize ayncio scheduler
+scheduler = AsyncIOScheduler()
+
+
+async def create_reminder_job(
+    phone_number: str, message: str, remind_when: datetime
+) -> dict:
+    """
+    This function creates a job that will send a message to the provided 
+    phone number at a specific time.
+
+    :param phone_number: The phone number to send the message to
+    :type phone_number: str
+
+    :param message: The message to be sent
+    :type message: str
+
+    :param remind_when: The datetime object that represents the time when the reminder should be sent
+    :type remind_when: datetime
+
+    :return: A dictionary with the keys "scheduled" and "job_id".
+    """
+
+    job_uid = randint(0, 9999)
+
+    reminder_job = scheduler.add_job(
+        func=vonage_sms.send,
+        trigger="date",
+        args=(phone_number, message),
+        name=f"reminder_set_{phone_number}_{job_uid}",
+        id=f"{phone_number}_{job_uid}",
+        next_run_time=remind_when,
+    )
+    return {"scheduled": True, "job_id": reminder_job.id}
+```
+
+We are importing `AsyncIOScheduler` from the `apscheduler` library and importing `vonage_sms` from our `services/vonage` module. The `create_reminder_job` function is responsible for creating a job that will send a message to the provided phone number at a specific number.
+
+iii). Create a file named `sms.py`, copy and paste the below code into it:
+
+```python
+# Stdlib Imports
+from datetime import datetime
+from typing import List
+
+# FastAPI Imports
+from fastapi import HTTPException
+
+# Own Imports
+from sms_reminder.services.tasks import create_reminder_job
+from sms_reminder.interface.sms import reminder_orm, Reminder
+
+
+async def create_user_reminder(
+    phone_number: str, message: str, remind_when: datetime
+) -> Reminder:
+    """
+    This function creates a new reminder in the database.
+
+    :param phone_number: The phone number of the user who will receive the reminder
+    :type phone_number: str
+
+    :param message: The message that will be sent to the user
+    :type message: str
+
+    :param reminder_when: datetime
+    :type reminder_when: datetime
+
+    :return: A reminder object
+    """
+
+    reminder = await reminder_orm.create(phone_number, message, remind_when)
+    reminder_job = await create_reminder_job(
+        phone_number, message, remind_when
+    )
+
+    if reminder_job["scheduled"]:
+        return reminder
+    raise HTTPException(400, {"message": "Was not able to set reminder!"})
+
+
+async def get_user_reminders() -> List[Reminder]:
+    """
+    This function gets the list of user reminders.
+
+    :return: A list of reminder objects.
+    """
+
+    reminders = await reminder_orm.get()
+    return reminders
+```
+
+We are importing `create_reminder_job` from `services/tasks` module, `reminder_orm` and `Reminder` model class from `interface/sms` module. The function `create_user_reminder` is responsible for creating a new reminder in the database. When we create a new reminder, we are also creating a job that would send the reminder message to the phone number provided. A 400 exception is raised if we were not able to set a job.
+
+Next is the `get_user_reminders` function, we are basically getting a list of reminders in the database.
 
 10). Create `api` Directory
 
