@@ -408,6 +408,79 @@ Let's go over what's happening in the above code. We are importing the python ti
 
 8). Create `interface` Directory
 
+We want an interface that sits between our data access layer (database) and the business logic layer (services) of an application. The best way to go about doing that is by using the repository design pattern. You see, the repository pattern abstracts the manner in which your data is queried or created for you. Moving on, create an `__init__.py` file to tell Python to treat the directory as a module, and then- create a `sms.py` file. Copy and paste the below code into the file:
+
+```python
+# Stdlib Imports
+from typing import List
+from datetime import datetime
+
+# SQLAlchemy Imports
+from sqlalchemy.orm import Session
+
+# Own Imports
+from sms_reminder.models.sms import Reminder
+from sms_reminder.config.database import SessionLocal
+
+
+class ReminderORMInterface:
+    """Reminder ORM that interface with the database."""
+
+    def __init__(self) -> None:
+        self.db: Session = self.get_db_session().__next__()
+
+    def get_db_session(self):
+        """
+        This method creates a database session, 
+        yields it to the caller, rollback the session 
+        if an exception occurs; otherwise, close the session.
+        """
+
+        session = SessionLocal()
+
+        try:
+            yield session
+        except Exception:
+            session.rollback()
+        finally:
+            session.close()
+
+    async def get(self) -> List[Reminder]:
+        """This method gets a list of reminders."""
+
+        reminders = self.db.query(Reminder).all()
+        return reminders
+
+    async def create(
+        self, phone_number: str, message: str, remind_when: datetime
+    ) -> Reminder:
+        """This method creates a new reminder to the database."""
+
+        reminder = Reminder(
+            phone_number=phone_number,
+            message=message,
+            remind_when=remind_when,
+        )
+
+        self.db.add(reminder)
+        self.db.commit()
+        self.db.refresh(reminder)
+
+        return reminder
+
+
+reminder_orm = ReminderORMInterface()
+```
+
+Let's break down what's happening in the above code, we have four methods:
+
+- `get_db_session`: this method creates a database session for us, yields it, rollback the session if an exception occurs; otherwise, close the session.
+- `__init__`: this method initialize the database session.
+- `get`: this method queries the Reminder model (table), getting us a list of all the objects in it.
+- `create`: this method creates a new reminder instance, persist it into a state (that will either rollback or move forward), flush pending changes and commit the current transaction and refresh the newly created instance in the table.
+
+To begin using our interface, we need to initialize our class to a variable.
+
 9). Create `services` Directory
 
 10). Create `api` Directory
