@@ -18,12 +18,13 @@ class VonageSMS:
     def __init__(self) -> None:
         """
         The method is used to initialize the class
-        and set the base_url, secret_key and api_key.
+        and set the base_url, seetings, secret_key and api_key.
         """
 
         self.base_url = "https://rest.nexmo.com/sms/json"
-        self.secret_key = settings().VOYAGE_SECRET_KEY
-        self.api_key = settings().VOYAGE_API_KEY
+        self.settings = settings()
+        self.secret_key = self.settings.VOYAGE_SECRET_KEY
+        self.api_key = self.settings.VOYAGE_API_KEY
 
     def headers(self) -> Dict[str, str]:
         """
