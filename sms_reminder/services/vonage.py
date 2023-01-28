@@ -15,12 +15,22 @@ import backoff
 class VoyageSMS:
     """SMS API Service provider to handle sending text messages."""
 
-    def __init__(self, secret_key: str, api_key: str) -> None:
+    def __init__(self) -> None:
+        """
+        The method is used to initialize the class
+        and set the base_url, secret_key and api_key.
+        """
+
         self.base_url = "https://rest.nexmo.com/sms/json"
-        self.secret_key = secret_key
-        self.api_key = api_key
+        self.secret_key = settings().VOYAGE_SECRET_KEY
+        self.api_key = settings().VOYAGE_API_KEY
 
     def headers(self) -> Dict[str, str]:
+        """
+        This method returns a header with a key of "Content-Type" and a value of
+        "application/x-www-form-urlencoded".
+        """
+
         return {"Content-Type": "application/x-www-form-urlencoded"}
 
     @backoff.on_exception(backoff.expo, httpx.ConnectTimeout, max_time=100)
@@ -55,7 +65,4 @@ class VoyageSMS:
             )
 
 
-voyage_sms = VoyageSMS(
-    secret_key=settings().VOYAGE_SECRET_KEY,
-    api_key=settings().VOYAGE_API_KEY,
-)
+voyage_sms = VoyageSMS()
