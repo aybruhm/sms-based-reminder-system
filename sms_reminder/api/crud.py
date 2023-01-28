@@ -11,10 +11,10 @@ from sms_reminder.schemas.crud import CreateReminderSchema, ReminderSchema
 
 
 # initialize the api router
-router = APIRouter(tags=["Reminder"])
+router = APIRouter(tags=["Reminder"], prefix="/reminders")
 
 
-@router.post("/create-reminder/", status_code=status.HTTP_201_CREATED)
+@router.post("/", status_code=status.HTTP_201_CREATED)
 async def create_reminder(payload: CreateReminderSchema):
     """
     This API view creates and set a reminder.
@@ -39,7 +39,7 @@ async def create_reminder(payload: CreateReminderSchema):
     return {"message": "Reminder set!", "data": reminder}
 
 
-@router.get("/reminders/", response_model=List[ReminderSchema])
+@router.get("/", response_model=List[ReminderSchema])
 async def get_reminders():
     """
     This API view gets the total available reminders.
