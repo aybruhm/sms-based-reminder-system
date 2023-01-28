@@ -9,6 +9,7 @@ from sms_reminder.config.settings import get_setting_values as settings
 
 # Third Party Imports
 import httpx
+import backoff
 
 
 class VoyageSMS:
@@ -22,6 +23,7 @@ class VoyageSMS:
     def headers(self) -> Dict[str, str]:
         return {"Content-Type": "application/x-www-form-urlencoded"}
 
+    @backoff.on_exception(backoff.expo, httpx.ConnectTimeout, max_time=100)
     async def send(self, phone_number: str, message: str) -> True:
         """
         This method sends a message to a phone number using the VoyageSMS API.
@@ -38,10 +40,7 @@ class VoyageSMS:
         async with httpx.AsyncClient() as client:
             request_data = f"from=Send Reminder!&text={message}&to={phone_number}&api_key={self.api_key}&api_secret={self.secret_key}"
             response = await client.post(
-                url=self.base_url,
-                headers=self.headers(),
-                data=request_data,
-                timeout=2,
+                url=self.base_url, headers=self.headers(), data=request_data
             )
             response_data = response.json()["messages"][0]
 
