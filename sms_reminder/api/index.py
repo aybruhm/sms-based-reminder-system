@@ -1,6 +1,8 @@
 # FastAPI Imports
 from fastapi import APIRouter
 
+
+# initialize api router
 router = APIRouter(tags=["Root"])
 
 
