@@ -6,7 +6,7 @@ from datetime import datetime
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 # Own Imports
-from sms_reminder.services.vonage import voyage_sms
+from sms_reminder.services.vonage import vonage_sms
 
 
 # initialize ayncio scheduler
@@ -34,7 +34,7 @@ async def create_reminder_job(
     job_uid = randint(0, 9999)
 
     reminder_job = scheduler.add_job(
-        func=voyage_sms.send,
+        func=vonage_sms.send,
         trigger="date",
         args=(phone_number, message),
         name=f"reminder_set_{phone_number}_{job_uid}",

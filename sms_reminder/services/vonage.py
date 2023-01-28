@@ -12,7 +12,7 @@ import httpx
 import backoff
 
 
-class VoyageSMS:
+class VonageSMS:
     """SMS API Service provider to handle sending text messages."""
 
     def __init__(self) -> None:
@@ -36,7 +36,7 @@ class VoyageSMS:
     @backoff.on_exception(backoff.expo, httpx.ConnectTimeout, max_time=100)
     async def send(self, phone_number: str, message: str) -> True:
         """
-        This method sends a message to a phone number using the VoyageSMS API.
+        This method sends a message to a phone number using the VonageSMS API.
 
         :param phone_number: The phone number to send the message to
         :type phone_number: str
@@ -59,10 +59,10 @@ class VoyageSMS:
             raise HTTPException(
                 500,
                 {
-                    "source": "voyagesms",
+                    "source": "VonageSMS",
                     "message": response_data["error-text"],
                 },
             )
 
 
-voyage_sms = VoyageSMS()
+vonage_sms = VonageSMS()
