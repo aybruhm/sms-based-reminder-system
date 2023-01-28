@@ -17,7 +17,8 @@ async def create_reminder_job(
     phone_number: str, message: str, remind_when: datetime
 ) -> dict:
     """
-    This function creates a job that will send a message to a phone number at a specific time.
+    This function creates a job that will send a message to the provided 
+    phone number at a specific time.
 
     :param phone_number: The phone number to send the message to
     :type phone_number: str

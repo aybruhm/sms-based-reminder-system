@@ -18,7 +18,7 @@ class VonageSMS:
     def __init__(self) -> None:
         """
         The method is used to initialize the class
-        and set the base_url, seetings, secret_key and api_key.
+        and set the base_url, settings, secret_key and api_key.
         """
 
         self.base_url = "https://rest.nexmo.com/sms/json"
@@ -37,7 +37,7 @@ class VonageSMS:
     @backoff.on_exception(backoff.expo, httpx.ConnectTimeout, max_time=100)
     async def send(self, phone_number: str, message: str) -> True:
         """
-        This method sends a message to a phone number using the VonageSMS API.
+        This method sends a message to the provided phone number using the VonageSMS API.
 
         :param phone_number: The phone number to send the message to
         :type phone_number: str
